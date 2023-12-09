@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./api
+    container_name: backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - shared-data:/data
+    networks:
+      - app-network
+    
+  frontend:
+    build: ./dashboard
+    container_name: frontend
+    ports:
+      - "8501:8501"
+    volumes:
+      - shared-data:/data
+    networks:
+      - app-network
+
+  postgres:
+    container_name: database
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: chat-app
+      POSTGER_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - shared-data:/data
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  shared-data:
