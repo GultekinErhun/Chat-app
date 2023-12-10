@@ -65,3 +65,14 @@ def get_userid_by_username(connection, username):
     userid = cursor.fetchone()
     cursor.close()
     return userid[0]
+
+def fetch_users(connection):
+    cursor = connection.cursor()
+    query = sql.SQL("SELECT username FROM users")
+    cursor.execute(query)
+    users = cursor.fetchall()
+    cursor.close()
+    if users:
+        return users
+    else:
+        return None

@@ -149,8 +149,14 @@ def chat_history(username: str, current_user: str = Depends(get_current_user)):
 # yeni endpoint: butun user return
 @app.get("/users")
 def get_users():
-    pass
-
+    users =  fetch_users(db_connection)
+    if users== None:
+        return None
+    logger.warning(users)
+    user_list = []
+    for u in users:
+        user_list.append(u[0])
+    return {'users' : user_list}
 
 if __name__ == "__main__":
     import uvicorn
