@@ -1,5 +1,10 @@
 from kafka import KafkaConsumer
 import json
+import logging
+import db
+from config import settings
+
+logger = logging.getLogger('tcpserver')
 
 def kafka_consumer_job():
     consumer = KafkaConsumer(
@@ -10,8 +15,23 @@ def kafka_consumer_job():
         value_deserializer=lambda m: json.loads(m.decode('utf-8'))
     )
 
+    db_connection = db.postgres_connect(settings.POSTGRES_DB, settings.POSTGRES_USER, settings.POSTGRES_PASSWORD, settings.POSTGRES_HOST, settings.POSTGRES_PORT)
+    if db_connection == None:
+        logger.warning("can not connect to db")
+        return None
     for message in consumer:
-        print(message.value)
+        sender = message.value['sender']
+        receiver = message.value['receiver']
+        sender_id = db.find_userid_by_username(db_connection, sender)
+        receiver_id = db.find_userid_by_username(db_connection, receiver)
+        message_text = message.value['message']
+        db.insert_message(db_connection, sender_id, receiver_id, message_text)
+
+
+        
 
 if __name__ == "__main__":
     kafka_consumer_job()
+
+
+

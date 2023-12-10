@@ -1,2 +1,2 @@
 -- down_migration.sql
-DROP TABLE IF EXISTS "user";
+DROP TABLE IF EXISTS "users";
