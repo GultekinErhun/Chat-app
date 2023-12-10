@@ -40,3 +40,28 @@ def create_user(connection, username, password):
     print("Kullanıcı oluşturuldu.")
  
 
+def fetch_conversation_history(connection, user1_id, user2_id):
+    cursor = connection.cursor()
+    query= sql.SQL(f"""
+    SELECT m.id, u.username as sender, u2.username as receiver, m.message, m.sent_at
+    FROM messages m
+    join users u on u.id = m.sender_id
+    join users u2 on u2.id = m.receiver_id
+    WHERE sender_id = {user1_id} and receiver_id = {user2_id} 
+          or receiver_id = {user1_id} and sender_id = {user2_id} 
+          ORDER BY sent_at ASC""")
+    cursor.execute(query)
+    history = cursor.fetchall()
+    cursor.close()
+    if history:
+        return history
+    else:
+        return None
+
+def get_userid_by_username(connection, username):
+    cursor = connection.cursor()
+    query = sql.SQL(f"SELECT id FROM users WHERE username = '{username}'")
+    cursor.execute(query)
+    userid = cursor.fetchone()
+    cursor.close()
+    return userid[0]
