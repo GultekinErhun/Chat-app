@@ -132,6 +132,8 @@ def chat_history(username: str, current_user: str = Depends(get_current_user)):
     user2_id = get_userid_by_username(db_connection, current_user)
     history = fetch_conversation_history(db_connection, user1_id, user2_id)
     logger.warning(history)
+    if history==None:
+        return {'history':history}
     chatHistory = []
     for message in history:
         m = {}
@@ -145,6 +147,9 @@ def chat_history(username: str, current_user: str = Depends(get_current_user)):
 # rec, sen, time
 
 # yeni endpoint: butun user return
+@app.get("/users")
+def get_users():
+    pass
 
 
 if __name__ == "__main__":
