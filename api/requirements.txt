@@ -1,5 +1,5 @@
 fastapi
-uvicorn
+uvicorn[standard]
 werkzeug
 psycopg2-binary
 PyJWT

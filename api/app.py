@@ -114,7 +114,7 @@ async def websocket_endpoint(websocket: WebSocket, user_name: str):
         message = payload["message"]
         receiver = payload["receiver"]
 
-        if manager.user_is_in():
+        if manager.user_is_in(receiver):
             kafka_data = {
                 "sender": user_name,
                 "receiver": receiver, 
