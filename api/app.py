@@ -1,22 +1,31 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from db import *
+from common.db import *
 from models import *
+from config import settings
 from authoritation import *
 from fastapi import FastAPI, HTTPException, Depends, WebSocket
 from typing import Dict
-from fastapi.responses import HTMLResponse
+from kafka import KafkaProducer
 import json
 
 app = FastAPI()
 
-db_connection = postgres_connect("chat", "postgres", "1q2w3e4rR", "localhost", "5432")
+db_connection = postgres_connect(settings.POSTGRES_DB, settings.POSTGRES_USER, settings.POSTGRES_PASSWORD, settings.POSTGRES_HOST, settings.POSTGRES_PORT)
+
+producer = KafkaProducer(
+    bootstrap_servers=['kafka:9092'],
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
 
 class ConnectionManager:
     def __init__(self):
         self.connections: Dict[str ,WebSocket] = {}
         print(self.connections)
 
+    def user_is_in(self, user_name):
+        return user_name in self.connections
+    
     async def connect(self, websocket: WebSocket, user_name:str):
         await websocket.accept()
         self.connections[user_name] = websocket
@@ -26,13 +35,13 @@ class ConnectionManager:
         for connection in self.connections.values():
             await connection.send_text(data)
 
-    async def send_to_client(self, sender:str ,recipient:str, message:str):
-        if recipient in self.connections:
+    async def send_to_client(self, sender:str ,receiver:str, message:str):
+        if receiver in self.connections:
             data = json.dumps({
                 "sender":sender,
                 "message":message
             })
-            await self.connections[recipient].send_text(data)
+            await self.connections[receiver].send_text(data)
        
 manager = ConnectionManager()
 
@@ -95,18 +104,28 @@ async def websocket_endpoint(websocket: WebSocket, user_name: str):
     while True:
         payload = await websocket.receive_json()
       
-        if "recipient" not in payload:
-            await websocket.send_text("Missing 'recipient' field in JSON.")
+        if "receiver" not in payload:
+            await websocket.send_text("Missing 'receiver' field in JSON.")
             continue
         if "message" not in payload:
             await websocket.send_text("Missing 'message' field in JSON.")
             continue
-        await manager.send_to_client(user_name,payload["recipient"] , payload["message"])
+        
+        message = payload["message"]
+        receiver = payload["receiver"]
+
+        if manager.user_is_in():
+            kafka_data = {
+                "sender": user_name,
+                "receiver": receiver, 
+                "message": message,
+            }
+            producer.send('sent_messages', value=kafka_data)
+
+        await manager.send_to_client(user_name, receiver, message)
 
 
 if __name__ == "__main__":
     import uvicorn
-
-    # "app" değişkeni, FastAPI uygulamanızın adını yansıtmalıdır
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app:app", host=settings.APP_HOST, port=settings.APP_PORT, reload=True)
 
