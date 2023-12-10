@@ -26,12 +26,14 @@ services:
     image: postgres:latest
     environment:
       POSTGRES_DB: chat-app
-      POSTGER_USER: admin
+      POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
     ports:
       - "5433:5432"
     volumes:
-      - shared-data:/data
+      - ./conf/db/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - shared-data:/var/lib/postgresql/data
+
 
   kafka-consumer:
     container_name: kafka-consumer
