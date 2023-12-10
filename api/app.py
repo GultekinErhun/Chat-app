@@ -1,6 +1,6 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from common.db import *
+from db import *
 from models import *
 from config import settings
 from authoritation import *
@@ -127,5 +127,5 @@ async def websocket_endpoint(websocket: WebSocket, user_name: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host=settings.APP_HOST, port=settings.APP_PORT, reload=True)
+    uvicorn.run("app:app", host=settings.API_HOST, port=8000, reload=True)
 

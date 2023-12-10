@@ -1,2 +1,6 @@
 fastapi
 uvicorn
+werkzeug
+psycopg2-binary
+PyJWT
+kafka-python

@@ -22,7 +22,7 @@ services:
       - app-network
 
   postgres:
-    container_name: database
+    container_name: postgres
     image: postgres:latest
     environment:
       POSTGRES_DB: chat-app
@@ -33,8 +33,9 @@ services:
     volumes:
       - ./conf/db/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - shared-data:/var/lib/postgresql/data
-
-
+    networks:
+      - app-network
+      
   kafka-consumer:
     container_name: kafka-consumer
     build: ./kafka_consumer

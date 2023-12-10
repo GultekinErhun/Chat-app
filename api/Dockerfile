@@ -14,6 +14,7 @@ ENV POSTGRES_PORT=5432
 ENV POSTGRES_DB=chat-app
 ENV POSTGRES_USER=admin
 ENV POSTGRES_PASSWORD=admin
+ENV API_PORT=8000
+ENV API_HOST=0.0.0.0
 
-CMD uvicorn app:app --reload
-
+CMD ["python", "app.py"]
