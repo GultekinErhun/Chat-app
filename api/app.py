@@ -1,4 +1,5 @@
 from werkzeug.security import generate_password_hash, check_password_hash
+from fastapi.middleware.cors import CORSMiddleware
 
 from db import *
 from models import *
@@ -12,6 +13,16 @@ import logging
 
 logger = logging.getLogger('tcpserver')
 app = FastAPI()
+
+origins = ["*"]  # Tüm originlere izin ver
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 db_connection = postgres_connect(settings.POSTGRES_DB, settings.POSTGRES_USER, settings.POSTGRES_PASSWORD, settings.POSTGRES_HOST, settings.POSTGRES_PORT)
 
