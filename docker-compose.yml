@@ -12,10 +12,10 @@ services:
       - app-network
     
   frontend:
-    build: ./dashboard
+    build: ./frontend
     container_name: frontend
     ports:
-      - "8501:8501"
+      - "3000:3000"
     volumes:
       - shared-data:/data
     networks:

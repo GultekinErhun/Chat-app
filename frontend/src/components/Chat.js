@@ -1,6 +1,6 @@
 // Chat.js
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+// import { useParams } from 'react-router-dom';
 import './Chat.css';
 
 function Chat() {
@@ -10,7 +10,7 @@ function Chat() {
   const [users, setUsers] = useState([]);
   const ws = useRef(null);
 
-  
+
   useEffect(() => {
     // Kullanıcı listesini çek
     setCurrentUserName(localStorage.getItem('username'))
@@ -24,22 +24,10 @@ function Chat() {
     }
   }, [selectedUser]);
 
-  useEffect(() => {
-    // WebSocket bağlantısını başlat
-    startWebSocket();
-
-    // Component unmount edildiğinde WebSocket bağlantısını kapat
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-    };
-  }, []);
-
-  const startWebSocket = () => {
+  const startWebSocket = useCallback(() => {
     const accessToken = localStorage.getItem('access_token');
     const username = localStorage.getItem('username');
-    const base_url = process.env.REACT_APP_BASE_URL;
+    // const base_url = process.env.REACT_APP_BASE_URL;
 
     if (accessToken && username) {
       const socketUrl = `ws://localhost:8000/chat/${username}`;
@@ -71,20 +59,33 @@ function Chat() {
         console.log('WebSocket connection closed');
       };
     }
-  };
+  }, [selectedUser, setMessageHistory, ws]);
+
+  useEffect(() => {
+    // WebSocket bağlantısını başlat
+
+    startWebSocket();
+
+    // Component unmount edildiğinde WebSocket bağlantısını kapat
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
+  }, [startWebSocket]);
 
   const fetchUsers = async () => {
     try {
       const base_url = process.env.REACT_APP_BASE_URL;
       const url = `${base_url}/users`;
-    
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
       });
-      
+
       const data = await response.json();
       setUsers(data.users);
     } catch (error) {
@@ -113,140 +114,140 @@ function Chat() {
 
   return (
     <div class="modal">
-        <div class="modal__dialog">
-            <div class="modal__close">
-                <a href="#" class="modal__icon">
-                    <i class="fa fa-times" aria-hidden="true"></i>
-                </a>
-                <span class="modal__note">Çıkış Yap</span>
-            </div>
-
-            <div class="modal__content chat">
-                <div class="modal__sidebar">
-                    <div class="chat__search search">
-                        <div class="search">
-                            <div class="search__icon">
-                                <i class="fa fa-search" aria-hidden="true"></i>
-                            </div>
-                            <input type="search" class="search__input" placeholder="Kullanıcı Ara"></input >
-                            <div class="search__icon search__icon_right">
-                                <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="chat__users chat__users_fullheight ">
-                        <div class="users">
-                            {users.map((user) => (
-                                <li class="users__item" key={user} onClick={() => setSelectedUser(user)} >
-                                    <div class="users__avatar avatar">
-                                        <a href="#" class="avatar__wrap">
-                                            {user[0]}
-                                        </a>
-                                    </div>
-                                    <span class="users__note"> {user}</span>
-                                    <div class="counter"></div>
-                                </li>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div class="me__content">
-                        <div class="me_head">
-                            <div class="head__avatar avatar_me avatar_larger">
-                                <a href="#" class="avatar__wrap">
-                                    Me:
-                                </a>
-                            </div>
-                            <div class="me_title">{currentUserName}</div>
-                            </div>
-                    </div>
-                </div>
-
-                <div class="modal__main">
-                    <div class="chatbox">
-                        <div class="chatbox__row">
-                            <div class="head">
-                            <div class="head__avatar avatar avatar_larger">
-                                <a href="#" class="avatar__wrap">
-                                    {selectedUser ? `${selectedUser[0]}` : '?'}
-                                </a>
-                            </div>
-                            <div class="head__title">{selectedUser ? `${selectedUser}` : 'Kullanıcı Seçiniz'}</div>
-                           
-                            </div>
-                        </div>
-                        <div class="chatbox__row chatbox__row_fullheight">
-                            <div class="chatbox__content">
-                                {messageHistory.map((message) => (
-                                    <div className="message" key={message.id}>
-                                        <div className="message__head">
-                                            <span className="message__note">{message.sender == currentUserName ? `${message.sent_at}` : `${message.sender}`}</span>
-                                            <span className="message__note">{message.sender == currentUserName ? `${message.sender}` : `${message.sent_at}`}</span>
-                                        </div>
-                                        <div className="message__base">
-
-                                            {message.sender == currentUserName ? (
-                                                <>  
-                                                    <div className="message__textbox">
-                                                        <span className="message__text">{message.message_text}</span>
-                                                    </div>
-                                                    <div className="message__avatar avatar">
-                                                        <a href="#" class="avatar__wrap">
-                                                            <div class="avatar__img"  width="35" height="35" >
-                                                                    <a href="#" class="avatar__wrap" >
-                                                                        {currentUserName[0]}
-                                                                    </a>
-                                                            </div>
-                                                        </a>
-                                                    </div>
-                                                </> 
-                                            ) : (
-                                                <>
-                                                    <div className="message__avatar avatar">
-                                                        <a href="#" class="avatar__wrap">
-                                                            <div class="avatar__img"  width="35" height="35" >
-                                                                    <a href="#" class="avatar__wrap" >
-                                                                        {selectedUser[0]}
-                                                                    </a>
-                                                            </div>
-                                                        </a>
-                                                    </div>
-                                                    <div className="message__textbox">
-                                                        <span className="message__text">{message.message_text}</span>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div class="chatbox__row">
-                            <div class="enter">
-                            <div class="enter__submit">
-                                <button class="button button_id_submit" type="submit">
-                                                <i class="fa fa-paper-plane" aria-hidden="true"></i>
-                                                </button>
-                            </div>
-                            <div class="enter__textarea">
-                                <textarea name="enterMessage" id="enterMessage" cols="30" rows="2" placeholder="Say message..."></textarea>
-                            </div>
-                            <div class="enter__icons">
-                                <a href="#" class="enter__icon">
-                                <i class="fa fa-paperclip" aria-hidden="true"></i>
-                                </a>
-                                <a href="#" class="enter__icon">
-                                <i class="fa fa-smile-o" aria-hidden="true"></i>
-                                </a>
-                            </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+      <div class="modal__dialog">
+        <div class="modal__close">
+          <a href="#" class="modal__icon">
+            <i class="fa fa-times" aria-hidden="true"></i>
+          </a>
+          <span class="modal__note">Çıkış Yap</span>
         </div>
+
+        <div class="modal__content chat">
+          <div class="modal__sidebar">
+            <div class="chat__search search">
+              <div class="search">
+                <div class="search__icon">
+                  <i class="fa fa-search" aria-hidden="true"></i>
+                </div>
+                <input type="search" class="search__input" placeholder="Kullanıcı Ara"></input >
+                <div class="search__icon search__icon_right">
+                  <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat__users chat__users_fullheight ">
+              <div class="users">
+                {users.map((user) => (
+                  <li class="users__item" key={user} onClick={() => setSelectedUser(user)} >
+                    <div class="users__avatar avatar">
+                      <a href="#" class="avatar__wrap">
+                        {user[0]}
+                      </a>
+                    </div>
+                    <span class="users__note"> {user}</span>
+                    <div class="counter"></div>
+                  </li>
+                ))}
+              </div>
+            </div>
+
+            <div class="me__content">
+              <div class="me_head">
+                <div class="head__avatar avatar_me avatar_larger">
+                  <a href="#" class="avatar__wrap">
+                    Me:
+                  </a>
+                </div>
+                <div class="me_title">{currentUserName}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal__main">
+            <div class="chatbox">
+              <div class="chatbox__row">
+                <div class="head">
+                  <div class="head__avatar avatar avatar_larger">
+                    <a href="#" class="avatar__wrap">
+                      {selectedUser ? `${selectedUser[0]}` : '?'}
+                    </a>
+                  </div>
+                  <div class="head__title">{selectedUser ? `${selectedUser}` : 'Kullanıcı Seçiniz'}</div>
+
+                </div>
+              </div>
+              <div class="chatbox__row chatbox__row_fullheight">
+                <div class="chatbox__content">
+                  {messageHistory.map((message) => (
+                    <div className="message" key={message.id}>
+                      <div className="message__head">
+                        <span className="message__note">{message.sender == currentUserName ? `${message.sent_at}` : `${message.sender}`}</span>
+                        <span className="message__note">{message.sender == currentUserName ? `${message.sender}` : `${message.sent_at}`}</span>
+                      </div>
+                      <div className="message__base">
+
+                        {message.sender == currentUserName ? (
+                          <>
+                            <div className="message__textbox">
+                              <span className="message__text">{message.message_text}</span>
+                            </div>
+                            <div className="message__avatar avatar">
+                              <a href="#" class="avatar__wrap">
+                                <div class="avatar__img" width="35" height="35" >
+                                  <a href="#" class="avatar__wrap" >
+                                    {currentUserName[0]}
+                                  </a>
+                                </div>
+                              </a>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="message__avatar avatar">
+                              <a href="#" class="avatar__wrap">
+                                <div class="avatar__img" width="35" height="35" >
+                                  <a href="#" class="avatar__wrap" >
+                                    {selectedUser[0]}
+                                  </a>
+                                </div>
+                              </a>
+                            </div>
+                            <div className="message__textbox">
+                              <span className="message__text">{message.message_text}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div class="chatbox__row">
+                <div class="enter">
+                  <div class="enter__submit">
+                    <button class="button button_id_submit" type="submit">
+                      <i class="fa fa-paper-plane" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div class="enter__textarea">
+                    <textarea name="enterMessage" id="enterMessage" cols="30" rows="2" placeholder="Say message..."></textarea>
+                  </div>
+                  <div class="enter__icons">
+                    <a href="#" class="enter__icon">
+                      <i class="fa fa-paperclip" aria-hidden="true"></i>
+                    </a>
+                    <a href="#" class="enter__icon">
+                      <i class="fa fa-smile-o" aria-hidden="true"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }

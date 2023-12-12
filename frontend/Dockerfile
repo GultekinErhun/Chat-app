@@ -1,17 +1,22 @@
-FROM python:3.8-slim
+# Use an official Node.js LTS (Long Term Support) image as the base image
+FROM node:18-alpine
 
+# Set the working directory inside the container
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    software-properties-common \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+# Copy package.json and package-lock.json separately to leverage Docker layer caching
+COPY package.json .
+COPY package-lock.json .
 
+# Install Node.js dependencies
+RUN npm install
+RUN npm install react-scripts
+
+# Copy the rest of the application code
 COPY . .
-RUN pip3 install -r requirements.txt
 
-EXPOSE 8501
+# Expose the default React Native development server port
+EXPOSE 3000
 
-ENTRYPOINT ["streamlit", "run", "app.py"]
+# Start the React Native development server
+CMD ["npm", "start"]
