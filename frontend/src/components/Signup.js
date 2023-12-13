@@ -9,7 +9,7 @@ function Signup() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const location = useLocation(); // useLocation hook'unu ekleyin
+  // const location = useLocation(); // useLocation hook'unu ekleyin
 
   const handleSignup = async () => {
     try {
