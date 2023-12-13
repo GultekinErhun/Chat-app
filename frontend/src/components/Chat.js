@@ -43,15 +43,16 @@ function Chat() {
         const eventData = event.data;
         const jsonData = JSON.parse(eventData);
 
-
         // Gelen mesajı messageHistory'e ekle
         const newMessage = {
           id: Date.now(),
           sender: jsonData.sender, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
           message_text: jsonData.message,
         };
-
-        setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+        
+        if (selectedUser === newMessage.sender){
+          setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+        }
       };
 
       ws.current.onerror = (error) => {
