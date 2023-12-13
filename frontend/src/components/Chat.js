@@ -111,6 +111,49 @@ function Chat() {
       console.error('Error fetching message history:', error);
     }
   };
+  
+  const [enterMessage, setEnterMessage] = useState('');
+
+  const handleEnterKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey){
+      event.preventDefault();
+       // Check if there's a selected user and a message to send
+      if (selectedUser && enterMessage.trim() !== '') {
+        sendMessage(selectedUser, enterMessage);
+
+        // Clear the input field after sending the message
+        setEnterMessage('');
+      }
+    }
+  }
+/////////////////////////////////
+//////////////////////////// TODO: burda bi gotluk var 
+//////////////////////////// herkeste atilan mesaj kendi atmis gibi gouzukuyo
+//////////////////////////// history yenilendiginde duzeliyo
+/////////////////////////////////
+
+  const sendMessage = (receiver, message) => {
+    // Check if the WebSocket is open
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      // Construct the payload to be sent as JSON
+      const payload = {
+        receiver,
+        message,
+      };
+  
+      // Send the payload as a JSON string through the WebSocket
+      ws.current.send(JSON.stringify(payload));
+
+      // Gelen mesajı messageHistory'e ekle
+      const newMessage = {
+        id: Date.now(),
+        sender: receiver, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
+        message_text: message,
+      };
+
+      setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+    }
+  };
 
   return (
     <div class="modal">
@@ -182,12 +225,12 @@ function Chat() {
                   {messageHistory.map((message) => (
                     <div className="message" key={message.id}>
                       <div className="message__head">
-                        <span className="message__note">{message.sender == currentUserName ? `${message.sent_at}` : `${message.sender}`}</span>
-                        <span className="message__note">{message.sender == currentUserName ? `${message.sender}` : `${message.sent_at}`}</span>
+                        <span className="message__note">{message.sender === currentUserName ? `${message.sent_at}` : `${message.sender}`}</span>
+                        <span className="message__note">{message.sender === currentUserName ? `${message.sender}` : `${message.sent_at}`}</span>
                       </div>
                       <div className="message__base">
 
-                        {message.sender == currentUserName ? (
+                        {message.sender === currentUserName ? (
                           <>
                             <div className="message__textbox">
                               <span className="message__text">{message.message_text}</span>
@@ -231,7 +274,15 @@ function Chat() {
                     </button>
                   </div>
                   <div class="enter__textarea">
-                    <textarea name="enterMessage" id="enterMessage" cols="30" rows="2" placeholder="Say message..."></textarea>
+                    <textarea name="enterMessage" 
+                      id="enterMessage"  
+                      cols="30"  
+                      rows="2" 
+                      placeholder="Say message..."
+                      value={enterMessage}
+                      onChange={(e) => setEnterMessage(e.target.value)}
+                      onKeyDown={handleEnterKeyDown}>
+                    </textarea>
                   </div>
                   <div class="enter__icons">
                     <a href="#" class="enter__icon">
