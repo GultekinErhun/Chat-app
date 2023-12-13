@@ -1,7 +1,15 @@
 // Chat.js
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // import { useParams } from 'react-router-dom';
+// In your main or entry file (e.g., index.js or App.js)
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import './Chat.css';
+
+
+library.add(faPaperPlane);
+
 
 function Chat() {
   const [selectedUser, setSelectedUser] = useState('');
@@ -130,11 +138,6 @@ function Chat() {
       }
     }
   }
-/////////////////////////////////
-//////////////////////////// TODO: burda bi gotluk var 
-//////////////////////////// herkeste atilan mesaj kendi atmis gibi gouzukuyo
-//////////////////////////// history yenilendiginde duzeliyo
-/////////////////////////////////
 
   const sendMessage = (selectedUser, enterMessage) => {
     // Check if the WebSocket is open
@@ -158,6 +161,7 @@ function Chat() {
       };
 
       setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+      setEnterMessage('');
     }
   };
 
@@ -275,8 +279,8 @@ function Chat() {
               <div class="chatbox__row">
                 <div class="enter">
                   <div class="enter__submit">
-                    <button class="button button_id_submit" type="submit">
-                      <i class="fa fa-paper-plane" aria-hidden="true"></i>
+                    <button class="button button_id_submit" type="button" onClick={() => sendMessage(selectedUser, enterMessage)}>
+                      <FontAwesomeIcon icon="paper-plane" /> send
                     </button>
                   </div>
                   <div class="enter__textarea">
@@ -284,7 +288,7 @@ function Chat() {
                       id="enterMessage"  
                       cols="30"  
                       rows="2" 
-                      placeholder="Say message..."
+                      placeholder="..."
                       value={enterMessage}
                       onChange={(e) => setEnterMessage(e.target.value)}
                       onKeyDown={handleEnterKeyDown}>
