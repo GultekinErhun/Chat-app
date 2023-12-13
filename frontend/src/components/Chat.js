@@ -40,12 +40,15 @@ function Chat() {
 
       ws.current.onmessage = (event) => {
         console.log('WebSocket message received:', event.data);
+        const eventData = event.data;
+        const jsonData = JSON.parse(eventData);
+
 
         // Gelen mesajı messageHistory'e ekle
         const newMessage = {
           id: Date.now(),
-          sender: selectedUser, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
-          message_text: event.data,
+          sender: jsonData.sender, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
+          message_text: jsonData.message,
         };
 
         setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
@@ -132,23 +135,25 @@ function Chat() {
 //////////////////////////// history yenilendiginde duzeliyo
 /////////////////////////////////
 
-  const sendMessage = (receiver, message) => {
+  const sendMessage = (selectedUser, enterMessage) => {
     // Check if the WebSocket is open
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+
       // Construct the payload to be sent as JSON
       const payload = {
-        receiver,
-        message,
+        'receiver': selectedUser,
+        'message': enterMessage,
       };
-  
+      console.log(payload)
+
       // Send the payload as a JSON string through the WebSocket
       ws.current.send(JSON.stringify(payload));
 
       // Gelen mesajı messageHistory'e ekle
       const newMessage = {
         id: Date.now(),
-        sender: receiver, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
-        message_text: message,
+        sender: currentUserName, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
+        message_text: enterMessage,
       };
 
       setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
