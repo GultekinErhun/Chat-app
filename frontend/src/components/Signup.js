@@ -75,22 +75,22 @@ function Signup() {
       <form className="signup-form">
         <label>
           Kullanıcı Adı:
-          <input
+        </label>
+        <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Kullanıcı adınızı girin"
           />
-        </label>
         <label>
           Şifre:
-          <input
+        </label>
+        <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Şifrenizi girin"
           />
-        </label>
         <button type="button" onClick={handleSignup}>
           Signup
         </button>
