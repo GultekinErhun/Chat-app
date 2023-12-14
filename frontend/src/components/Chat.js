@@ -1,10 +1,12 @@
 // Chat.js
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Component } from 'react';
 // import { useParams } from 'react-router-dom';
 // In your main or entry file (e.g., index.js or App.js)
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import './Chat.css';
 
 
@@ -17,11 +19,39 @@ function Chat() {
   const [messageHistory, setMessageHistory] = useState([]);
   const [users, setUsers] = useState([]);
   const ws = useRef(null);
+  const chatboxRef = useRef(null);
+  const navigate = useNavigate();
+  const currentDate = new Date();
+
+
+  useEffect(() => {
+    // Session storage'dan değeri al
+    const access_token = sessionStorage.getItem('access_token'); // access_token'i kendi anahtarınızla değiştirin
+    const username = sessionStorage.getItem('username');
+
+    // Eğer değer boşsa, "login" sayfasına yönlendir
+    if (!access_token || !username) {
+
+      toast.error('Önce giriş yapınız', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        draggable: true,
+        progress: undefined,
+      });
+
+      setTimeout(() => {
+        navigate(`/login`); 
+      }, 500);
+    }
+
+  }, [navigate]);
 
 
   useEffect(() => {
     // Kullanıcı listesini çek
-    setCurrentUserName(localStorage.getItem('username'))
+    setCurrentUserName(sessionStorage.getItem('username'))
     fetchUsers();
   }, []);
 
@@ -32,9 +62,16 @@ function Chat() {
     }
   }, [selectedUser]);
 
+    useEffect(() => {
+      // Scroll to the bottom of the chatbox__row_fullheight element when component mounts or messageHistory changes
+      if (chatboxRef.current) {
+        chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
+      }
+    });
+
   const startWebSocket = useCallback(() => {
-    const accessToken = localStorage.getItem('access_token');
-    const username = localStorage.getItem('username');
+    const accessToken = sessionStorage.getItem('access_token');
+    const username = sessionStorage.getItem('username');
     // const base_url = process.env.REACT_APP_BASE_URL;
 
     if (accessToken && username) {
@@ -51,11 +88,13 @@ function Chat() {
         const eventData = event.data;
         const jsonData = JSON.parse(eventData);
 
+        console.log(jsonData)
         // Gelen mesajı messageHistory'e ekle
         const newMessage = {
           id: Date.now(),
           sender: jsonData.sender, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
           message_text: jsonData.message,
+          sent_at: jsonData.sent_at,
         };
         
         if (selectedUser === newMessage.sender){
@@ -94,14 +133,70 @@ function Chat() {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         },
       });
 
-      const data = await response.json();
-      setUsers(data.users);
+      if (response.ok){
+        const data = await response.json();
+        setUsers(data.users);
+      }else{
+        setTimeout(() => {
+          navigate(`/login`); 
+        }, 500);
+      }
+     
     } catch (error) {
       console.error('Error fetching users:', error);
+      setTimeout(() => {
+        navigate(`/login`); 
+      }, 500);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      const base_url = process.env.REACT_APP_BASE_URL;
+      const url = `${base_url}/logout`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        },
+      });
+      
+      sessionStorage.setItem('access_token', NaN); 
+      sessionStorage.setItem('username', NaN);
+
+      toast.success('Çıkış başarılı', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        draggable: true,
+        progress: undefined,
+      });
+
+      setTimeout(() => {
+        navigate(`/login`); 
+      }, 0);
+     
+    } catch (error) {
+
+      sessionStorage.setItem('access_token', NaN); 
+      sessionStorage.setItem('username', NaN);
+      toast.success('Çıkış başarılı', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        draggable: true,
+        progress: undefined,
+      });
+      setTimeout(() => {
+        navigate(`/login`); 
+      }, 0);
     }
   };
 
@@ -113,14 +208,24 @@ function Chat() {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         },
       });
 
-      const data = await response.json();
-      setMessageHistory(data.history || []);
+      if (response.ok){
+        const data = await response.json();
+        setMessageHistory(data.history || []);
+      }else{
+        setTimeout(() => {
+          navigate(`/login`); 
+        }, 500);
+      }
+   
     } catch (error) {
       console.error('Error fetching message history:', error);
+      setTimeout(() => {
+        navigate(`/login`); 
+      }, 500);
     }
   };
   
@@ -142,11 +247,14 @@ function Chat() {
   const sendMessage = (selectedUser, enterMessage) => {
     // Check if the WebSocket is open
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      
+      const formattedDate = currentDate.toLocaleString();
 
       // Construct the payload to be sent as JSON
       const payload = {
         'receiver': selectedUser,
         'message': enterMessage,
+        'sent_at': formattedDate,
       };
       console.log(payload)
 
@@ -158,6 +266,7 @@ function Chat() {
         id: Date.now(),
         sender: currentUserName, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
         message_text: enterMessage,
+        sent_at: formattedDate,
       };
 
       setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
@@ -172,7 +281,11 @@ function Chat() {
           <a href="#" class="modal__icon">
             <i class="fa fa-times" aria-hidden="true"></i>
           </a>
-          <span class="modal__note">Çıkış Yap</span>
+          <span class="modal__note" onClick={() => logout()}
+          style={{
+            color:  'black',
+          }}
+          >Çıkış Yap</span>
         </div>
 
         <div class="modal__content chat">
@@ -192,10 +305,16 @@ function Chat() {
             <div class="chat__users chat__users_fullheight ">
               <div class="users">
                 {users.map((user) => (
-                  <li class="users__item" key={user} onClick={() => setSelectedUser(user)} >
+                  <li class="users__item" 
+                  key={user} 
+                  onClick={() => setSelectedUser(user)} 
+                  style={{
+                    backgroundColor: selectedUser === user ? '#a3a3a3' : '',
+                  }}
+                  >
                     <div class="users__avatar avatar">
                       <a href="#" class="avatar__wrap">
-                        {user[0]}
+                        {user[0].toUpperCase()}
                       </a>
                     </div>
                     <span class="users__note"> {user}</span>
@@ -223,14 +342,13 @@ function Chat() {
                 <div class="head">
                   <div class="head__avatar avatar avatar_larger">
                     <a href="#" class="avatar__wrap">
-                      {selectedUser ? `${selectedUser[0]}` : '?'}
+                      {selectedUser ? `${selectedUser[0].toUpperCase()}` : '?'}
                     </a>
                   </div>
-                  <div class="head__title">{selectedUser ? `${selectedUser}` : 'Kullanıcı Seçiniz'}</div>
-
+                  <div class="head__title">{selectedUser ? `${selectedUser}` : ''}</div>
                 </div>
               </div>
-              <div class="chatbox__row chatbox__row_fullheight">
+              <div class="chatbox__row chatbox__row_fullheight" ref={chatboxRef}>
                 <div class="chatbox__content">
                   {messageHistory.map((message) => (
                     <div className="message" key={message.id}>
@@ -249,7 +367,7 @@ function Chat() {
                               <a href="#" class="avatar__wrap">
                                 <div class="avatar__img" width="35" height="35" >
                                   <a href="#" class="avatar__wrap" >
-                                    {currentUserName[0]}
+                                    {currentUserName[0].toUpperCase()}
                                   </a>
                                 </div>
                               </a>
@@ -261,7 +379,7 @@ function Chat() {
                               <a href="#" class="avatar__wrap">
                                 <div class="avatar__img" width="35" height="35" >
                                   <a href="#" class="avatar__wrap" >
-                                    {selectedUser[0]}
+                                    {selectedUser[0].toUpperCase()}
                                   </a>
                                 </div>
                               </a>

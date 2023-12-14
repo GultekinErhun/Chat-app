@@ -28,11 +28,9 @@ def insert_message(connection, sender_id, receiver_id, message, sent_at = ""):
     try:
         cursor = connection.cursor()
         if sent_at == "":
-            query = sql.SQL(f"""INSERT INTO messages (sender_id, receiver_id, message)
-                        VALUES ({sender_id}, {receiver_id}, '{message}')""")
+            query = sql.SQL("INSERT INTO messages (sender_id, receiver_id, message) VALUES ({}, {}, {})").format( sql.Literal(sender_id), sql.Literal(receiver_id), sql.Literal(message))
         else:
-            query = sql.SQL(f"""INSERT INTO messages (sender_id, receiver_id, message, sent_at)
-                        VALUES ({sender_id}, {receiver_id}, '{message}', {sent_at})""")
+            query = sql.SQL("INSERT INTO messages (sender_id, receiver_id, message, sent_at) VALUES ({}, {}, {}, {})").format( sql.Literal(sender_id), sql.Literal(receiver_id), sql.Literal(message), sql.Literal(sent_at))
         
         cursor.execute(query)
         connection.commit()

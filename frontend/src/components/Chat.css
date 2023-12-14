@@ -394,7 +394,7 @@ button:focus {
 .message__head {
   display: flex;
   justify-content: space-between;
-  padding: 12px 80px 10px 82px;
+  padding: 12px 96px 10px 60px;
 }
 
 .message__note {
@@ -408,6 +408,7 @@ button:focus {
 .message__base {
   display: inline-flex;
   width: 100%;
+  padding: 1px 1px 20px 1px;
   align-items: center;
 }
 
@@ -419,7 +420,7 @@ button:focus {
   align-items: center;
   margin-left: 15px;
   margin-right: 15px;
-  width: 100%;
+  width: 850px;
   min-height: 43px;
   background-color: #f5f6fa;
   border-radius: 9px;
