@@ -25,7 +25,8 @@ def kafka_consumer_job():
         sender_id = db.find_userid_by_username(db_connection, sender)
         receiver_id = db.find_userid_by_username(db_connection, receiver)
         message_text = message.value['message']
-        db.insert_message(db_connection, sender_id, receiver_id, message_text)
+        sent_at = message.value['sent_at']
+        db.insert_message(db_connection, sender_id, receiver_id, message_text, sent_at)
 
 
         

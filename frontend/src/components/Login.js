@@ -56,8 +56,8 @@ function Login() {
       // Kullanıcı adı ve erişim tokeni bilgilerini kaydet
       setUsername(data.user_name);
       setAccessToken(data.access_token);
-      localStorage.setItem('username', data.user_name);
-      localStorage.setItem('access_token', data.access_token);
+      sessionStorage.setItem('username', data.user_name);
+      sessionStorage.setItem('access_token', data.access_token);
       // Başarılı giriş işlemi sonrasında "chat" sayfasına yönlendir
       history('/chat');
     } catch (error) {
