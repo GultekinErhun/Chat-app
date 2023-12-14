@@ -11,6 +11,8 @@ from kafka import KafkaProducer
 from datetime import datetime
 import json
 import logging
+from fastapi.websockets import WebSocketDisconnect
+from datetime import datetime
 
 logger = logging.getLogger('tcpserver')
 app = FastAPI()
@@ -42,19 +44,37 @@ class ConnectionManager:
     
     async def connect(self, websocket: WebSocket, user_name:str):
         await websocket.accept()
-        self.connections[user_name] = websocket
+        self.connections[user_name] = websocket 
         print(self.connections)
+    
+    async def disconnect(self, user_name: str):
+        del self.connections[user_name]
 
     async def broadcast(self, data: str):
         for connection in self.connections.values():
             await connection.send_text(data)
 
-    async def send_to_client(self, sender:str ,receiver:str, message:str, sent_at:str):
+    async def send_message_to_client(self, sender:str ,receiver:str, message:str, sent_at:str):
         if receiver in self.connections:
             data = json.dumps({
-                "sender":sender,
-                "message":message,
-                "sent_at":sent_at
+                "type": "message",
+                "content": {
+                    "sender":sender,
+                    "message":message,
+                    "sent_at":sent_at
+                    }
+            })
+            await self.connections[receiver].send_text(data)
+    
+    async def send_user_event_to_client(self, username:str , receiver:str, time:str, islogin: bool):
+        if receiver in self.connections:
+            data = json.dumps({
+                "type": "user_event",
+                "content": {
+                    "user":username,
+                    "islogin": islogin,
+                    "time":time
+                    }
             })
             await self.connections[receiver].send_text(data)
        
@@ -121,30 +141,67 @@ def protected_endpoint(current_user: str = Depends(get_current_user)):
    
 @app.websocket("/chat/{user_name}")
 async def websocket_endpoint(websocket: WebSocket, user_name: str):
+    logger.warning(136)
     await manager.connect(websocket, user_name)
-    while True:
-        payload = await websocket.receive_json()
-        sent_at = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
-        if "receiver" not in payload:
-            await websocket.send_text("Missing 'receiver' field in JSON.")
-            continue
-        if "message" not in payload:
-            await websocket.send_text("Missing 'message' field in JSON.")
-            continue
-        if "sent_at" not in payload:
-            sent_at = payload["sent_at"]
-        message = payload["message"]
-        receiver = payload["receiver"]
+    now = str(datetime.now())
 
-        kafka_data = {
-            "sender": user_name,
-            "receiver": receiver, 
-            "message": message,
-            "sent_at": sent_at,
+    # inform kafka that user has logged in
+    kafka_user_event_data = {
+        "username": user_name,
+        "islogin": True,
+        "time": now
+    }
+    producer.send('user_event', value=kafka_user_event_data)
+
+    # inform users that user has logged in
+    for receiver in manager.connections:
+        if receiver!=user_name:
+            await manager.send_user_event_to_client(user_name, receiver, now, True)
+    
+    try:
+        while True:
+            payload = await websocket.receive_json()
+            sent_at = datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p")
+            if "receiver" not in payload:
+                await websocket.send_text("Missing 'receiver' field in JSON.")
+                continue
+            if "message" not in payload:
+                await websocket.send_text("Missing 'message' field in JSON.")
+                continue
+            if "sent_at" not in payload:
+                sent_at = payload["sent_at"]
+
+            message = payload["message"]
+            receiver = payload["receiver"]
+
+            kafka_data = {
+                "sender": user_name,
+                "receiver": receiver, 
+                "message": message,
+                "sent_at": sent_at,
+            }
+            
+            producer.send('sent_messages', value=kafka_data)
+            await manager.send_message_to_client(user_name, receiver, message, sent_at)
+    
+    except WebSocketDisconnect:
+        
+        # inform kafka that user has logged out
+        kafka_user_event_data = {
+            "username": user_name,
+            "islogin": False,
+            "time": now
         }
-        producer.send('sent_messages', value=kafka_data)
+        producer.send('user_event', value=kafka_user_event_data)
 
-        await manager.send_to_client(user_name, receiver, message, sent_at)
+        # inform users that user has logged out
+        for receiver in manager.connections:
+            if receiver!=user_name:
+                await manager.send_user_event_to_client(user_name, receiver, now, False)
+        
+        # disconnect user
+        await manager.disconnect(user_name)
+
 
 @app.get("/chat/{username}/history")
 def chat_history(username: str, current_user: str = Depends(get_current_user)):
