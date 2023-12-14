@@ -18,56 +18,14 @@ function Chat() {
   const [currentUserName, setCurrentUserName] = useState('');
   const [messageHistory, setMessageHistory] = useState([]);
   const [users, setUsers] = useState([]);
+  const [activeUsers, setActiveUsers] = useState([]);
   const ws = useRef(null);
   const chatboxRef = useRef(null);
   const navigate = useNavigate();
   const currentDate = new Date();
+  const [enterMessage, setEnterMessage] = useState('');
 
-
-  useEffect(() => {
-    // Session storage'dan değeri al
-    const access_token = sessionStorage.getItem('access_token'); // access_token'i kendi anahtarınızla değiştirin
-    const username = sessionStorage.getItem('username');
-
-    // Eğer değer boşsa, "login" sayfasına yönlendir
-    if (!access_token || !username) {
-
-      toast.error('Önce giriş yapınız', {
-        position: 'top-right',
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        draggable: true,
-        progress: undefined,
-      });
-
-      setTimeout(() => {
-        navigate(`/login`); 
-      }, 500);
-    }
-
-  }, [navigate]);
-
-
-  useEffect(() => {
-    // Kullanıcı listesini çek
-    setCurrentUserName(sessionStorage.getItem('username'))
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    // Kullanıcı değiştikçe yeni kullanıcı ile olan mesaj geçmişini çek
-    if (selectedUser) {
-      fetchMessageHistory(selectedUser);
-    }
-  }, [selectedUser]);
-
-    useEffect(() => {
-      // Scroll to the bottom of the chatbox__row_fullheight element when component mounts or messageHistory changes
-      if (chatboxRef.current) {
-        chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
-      }
-    });
+  //--------------------------------------------------------------------------------------------------------------------------------
 
   const startWebSocket = useCallback(() => {
     const accessToken = sessionStorage.getItem('access_token');
@@ -88,18 +46,26 @@ function Chat() {
         const eventData = event.data;
         const jsonData = JSON.parse(eventData);
 
-        console.log(jsonData)
-        // Gelen mesajı messageHistory'e ekle
-        const newMessage = {
-          id: Date.now(),
-          sender: jsonData.sender, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
-          message_text: jsonData.message,
-          sent_at: jsonData.sent_at,
-        };
-        
-        if (selectedUser === newMessage.sender){
-          setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+        console.log(jsonData);
+        // Gelen mesajı mesajı değerlendir, tipine bak
+        if (jsonData.type == "message"){
+          const newMessage = {
+            id: Date.now(),
+            sender: jsonData.content.sender, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
+            message_text: jsonData.content.message,
+            sent_at: jsonData.content.sent_at,
+          };
+          
+          if (selectedUser === newMessage.sender){
+            setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+          }
         }
+        // user ile ilgili birşey olduysa değerlendir ve yap
+        if (jsonData.type == "user_event"){
+              fetchUsers();
+              fetchActiveUsers();
+        }
+       
       };
 
       ws.current.onerror = (error) => {
@@ -112,18 +78,35 @@ function Chat() {
     }
   }, [selectedUser, setMessageHistory, ws]);
 
-  useEffect(() => {
-    // WebSocket bağlantısını başlat
+  const sendMessage = (selectedUser, enterMessage) => {
+    // Check if the WebSocket is open
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      
+      const formattedDate = currentDate.toLocaleString();
 
-    startWebSocket();
+      // Construct the payload to be sent as JSON
+      const payload = {
+        'receiver': selectedUser,
+        'message': enterMessage,
+        'sent_at': formattedDate,
+      };
+      console.log(payload)
 
-    // Component unmount edildiğinde WebSocket bağlantısını kapat
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-    };
-  }, [startWebSocket]);
+      // Send the payload as a JSON string through the WebSocket
+      ws.current.send(JSON.stringify(payload));
+
+      // Gelen mesajı messageHistory'e ekle
+      const newMessage = {
+        id: Date.now(),
+        sender: currentUserName, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
+        message_text: enterMessage,
+        sent_at: formattedDate,
+      };
+
+      setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+      setEnterMessage('');
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -148,6 +131,89 @@ function Chat() {
      
     } catch (error) {
       console.error('Error fetching users:', error);
+      toast.error( error || 'Bir hata yaşandı', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        draggable: true,
+        progress: undefined,
+      });
+
+      setTimeout(() => {
+        navigate(`/login`); 
+      }, 500);
+    }
+  };
+
+  const fetchActiveUsers = async () => {
+    try {
+      const base_url = process.env.REACT_APP_BASE_URL;
+      const url = `${base_url}/active_user`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        },
+      });
+
+      if (response.ok){
+        const data = await response.json();
+        setActiveUsers(data.active_users);
+      }else{
+        setTimeout(() => {
+          navigate(`/login`); 
+        }, 500);
+      }
+     
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error( error || 'Bir hata yaşandı', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        draggable: true,
+        progress: undefined,
+      });
+      setTimeout(() => {
+        navigate(`/login`); 
+      }, 500);
+    }
+  };
+
+  const fetchMessageHistory = async (otherUser) => {
+    try {
+      const base_url = process.env.REACT_APP_BASE_URL;
+      const url = `${base_url}/chat/${otherUser}/history`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        },
+      });
+
+      if (response.ok){
+        const data = await response.json();
+        setMessageHistory(data.history || []);
+      }else{
+        setTimeout(() => {
+          navigate(`/login`); 
+        }, 500);
+      }
+   
+    } catch (error) {
+      console.error('Error fetching message history:', error);
+      toast.error( error || 'Bir hata yaşandı', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        draggable: true,
+        progress: undefined,
+      });
       setTimeout(() => {
         navigate(`/login`); 
       }, 500);
@@ -200,36 +266,8 @@ function Chat() {
     }
   };
 
-  const fetchMessageHistory = async (otherUser) => {
-    try {
-      const base_url = process.env.REACT_APP_BASE_URL;
-      const url = `${base_url}/chat/${otherUser}/history`;
+  //--------------------------------------------------------------------------------------------------------------------------------
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
-        },
-      });
-
-      if (response.ok){
-        const data = await response.json();
-        setMessageHistory(data.history || []);
-      }else{
-        setTimeout(() => {
-          navigate(`/login`); 
-        }, 500);
-      }
-   
-    } catch (error) {
-      console.error('Error fetching message history:', error);
-      setTimeout(() => {
-        navigate(`/login`); 
-      }, 500);
-    }
-  };
-  
-  const [enterMessage, setEnterMessage] = useState('');
 
   const handleEnterKeyDown = (event) => {
     if (event.key === 'Enter' && !event.shiftKey){
@@ -244,35 +282,70 @@ function Chat() {
     }
   }
 
-  const sendMessage = (selectedUser, enterMessage) => {
-    // Check if the WebSocket is open
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      
-      const formattedDate = currentDate.toLocaleString();
 
-      // Construct the payload to be sent as JSON
-      const payload = {
-        'receiver': selectedUser,
-        'message': enterMessage,
-        'sent_at': formattedDate,
-      };
-      console.log(payload)
+  //--------------------------------------------------------------------------------------------------------------------------------
 
-      // Send the payload as a JSON string through the WebSocket
-      ws.current.send(JSON.stringify(payload));
+  useEffect(() => {
+    // Session storage'dan değeri al
+    const access_token = sessionStorage.getItem('access_token'); // access_token'i kendi anahtarınızla değiştirin
+    const username = sessionStorage.getItem('username');
 
-      // Gelen mesajı messageHistory'e ekle
-      const newMessage = {
-        id: Date.now(),
-        sender: currentUserName, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
-        message_text: enterMessage,
-        sent_at: formattedDate,
-      };
+    // Eğer değer boşsa, "login" sayfasına yönlendir
+    if (!access_token || !username) {
 
-      setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
-      setEnterMessage('');
+      toast.error('Önce giriş yapınız', {
+        position: 'top-right',
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        draggable: true,
+        progress: undefined,
+      });
+
+      setTimeout(() => {
+        navigate(`/login`); 
+      }, 500);
     }
-  };
+
+  }, [navigate]);
+
+
+  useEffect(() => {
+    // Kullanıcı listesini çek
+    setCurrentUserName(sessionStorage.getItem('username'))
+    fetchUsers();
+    fetchActiveUsers();
+  }, []);
+
+  useEffect(() => {
+    // Kullanıcı değiştikçe yeni kullanıcı ile olan mesaj geçmişini çek
+    if (selectedUser) {
+      fetchMessageHistory(selectedUser);
+    }
+  }, [selectedUser]);
+
+  useEffect(() => {
+    // Scroll to the bottom of the chatbox__row_fullheight element when component mounts or messageHistory changes
+    if (chatboxRef.current) {
+      chatboxRef.current.scrollTop = chatboxRef.current.scrollHeight;
+    }
+  });
+
+  useEffect(() => {
+    // WebSocket bağlantısını başlat
+
+    startWebSocket();
+    fetchUsers();
+    fetchActiveUsers();
+
+    // Component unmount edildiğinde WebSocket bağlantısını kapat
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
+  }, [startWebSocket]);
+
 
   return (
     <div class="modal">
@@ -312,7 +385,7 @@ function Chat() {
                     backgroundColor: selectedUser === user ? '#a3a3a3' : '',
                   }}
                   >
-                    <div class="users__avatar avatar">
+                    <div className={`users__avatar avatar ${activeUsers.includes(user) ? 'avatar_online' : ''}`}>
                       <a href="#" class="avatar__wrap">
                         {user[0].toUpperCase()}
                       </a>

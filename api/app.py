@@ -3,16 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from db import *
 from models import *
-from config import settings
+from utils import *
 from authoritation import *
-from fastapi import FastAPI, HTTPException, Depends, WebSocket
-from typing import Dict
-from kafka import KafkaProducer
-from datetime import datetime
 import json
 import logging
-from fastapi.websockets import WebSocketDisconnect
+import asyncio
+from typing import Dict
+from config import settings
 from datetime import datetime
+from kafka import KafkaProducer
+from fastapi.websockets import WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Depends, WebSocket
+
 
 logger = logging.getLogger('tcpserver')
 app = FastAPI()
@@ -42,6 +44,9 @@ class ConnectionManager:
     def user_is_in(self, user_name):
         return user_name in self.connections
     
+    def get_active_users(self):
+        return list(self.connections.keys()) 
+    
     async def connect(self, websocket: WebSocket, user_name:str):
         await websocket.accept()
         self.connections[user_name] = websocket 
@@ -66,13 +71,13 @@ class ConnectionManager:
             })
             await self.connections[receiver].send_text(data)
     
-    async def send_user_event_to_client(self, username:str , receiver:str, time:str, islogin: bool):
+    async def send_user_event_to_client(self, username:str , receiver:str, time:str, event:str):
         if receiver in self.connections:
             data = json.dumps({
                 "type": "user_event",
                 "content": {
                     "user":username,
-                    "islogin": islogin,
+                    "event": event,
                     "time":time
                     }
             })
@@ -83,10 +88,10 @@ manager = ConnectionManager()
 
 @app.post("/signup")
 def signup(user: SignupRequet):
-
-    if user.username == None or user.username == "":
+    now = str(datetime.now())
+    if user.username == None or user.username.replace(" ", "") == "":
         raise HTTPException(status_code=400, detail="Missing 'username' field in JSON.")
-    if user.password == None or user.password == "":
+    if user.password == None or user.password.replace(" ", "") == "":
         raise HTTPException(status_code=400, detail="Missing 'password' field in JSON.")
     
     try:
@@ -104,12 +109,31 @@ def signup(user: SignupRequet):
     except Exception as e:
         raise HTTPException(status_code=500,detail=e)
     
+    kafka_user_event_data = {
+        "username": user.username,
+        "event": "signup",
+        "time": now
+    }
+    producer.send('user_event', value=kafka_user_event_data)
+
+    try: 
+        for receiver in manager.connections:
+            if receiver!=user.username:
+                asyncio.run(manager.send_user_event_to_client(user.username, receiver, now, "signup"))             
+    except Exception as e:
+        print("singnup suer event can't send", e)
+
 
     return {"message": "Kullanıcı başarıyla kaydedildi."}
 
 
 @app.post("/login")
 def signup(request: LoginRequet):
+    if request.username.replace(" ", "") == "" or request.username == None:
+        raise HTTPException(status_code=400,detail="Missing 'username' field in JSON.")
+    if request.password.replace(" ", "") == "" or request.password == None:
+        raise HTTPException(status_code=400,detail="Missing 'password' field in JSON.")
+
     try:
         user = find_user_by_username(db_connection, request.username)
     except Exception as e:
@@ -148,7 +172,7 @@ async def websocket_endpoint(websocket: WebSocket, user_name: str):
     # inform kafka that user has logged in
     kafka_user_event_data = {
         "username": user_name,
-        "islogin": True,
+        "event": "login",
         "time": now
     }
     producer.send('user_event', value=kafka_user_event_data)
@@ -156,7 +180,7 @@ async def websocket_endpoint(websocket: WebSocket, user_name: str):
     # inform users that user has logged in
     for receiver in manager.connections:
         if receiver!=user_name:
-            await manager.send_user_event_to_client(user_name, receiver, now, True)
+            await manager.send_user_event_to_client(user_name, receiver, now, "login")
     
     try:
         while True:
@@ -189,7 +213,7 @@ async def websocket_endpoint(websocket: WebSocket, user_name: str):
         # inform kafka that user has logged out
         kafka_user_event_data = {
             "username": user_name,
-            "islogin": False,
+            "event": "logout",
             "time": now
         }
         producer.send('user_event', value=kafka_user_event_data)
@@ -197,7 +221,7 @@ async def websocket_endpoint(websocket: WebSocket, user_name: str):
         # inform users that user has logged out
         for receiver in manager.connections:
             if receiver!=user_name:
-                await manager.send_user_event_to_client(user_name, receiver, now, False)
+                await manager.send_user_event_to_client(user_name, receiver, now, "logout")
         
         # disconnect user
         await manager.disconnect(user_name)
@@ -227,6 +251,9 @@ def chat_history(username: str, current_user: str = Depends(get_current_user)):
 @app.get("/users")
 def get_users( current_user: str = Depends(get_current_user)):
     users =  fetch_users(db_connection)
+    active_users = manager.get_active_users()
+    active_users = [item for item in active_users if item != current_user]
+
     if users== None:
         return None
     logger.warning(users)
@@ -234,7 +261,16 @@ def get_users( current_user: str = Depends(get_current_user)):
     for u in users:
         if current_user != u[0]:
             user_list.append(u[0])
-    return {'users' : user_list}
+
+    sorted_list = sort_and_merge_lists(user_list, active_users)
+    return {'users' : sorted_list}
+
+
+@app.get("/active_user")
+def get_users( current_user: str = Depends(get_current_user)):
+    active_users = manager.get_active_users()
+    return {'active_users' : active_users}
+
 
 if __name__ == "__main__":
     import uvicorn
