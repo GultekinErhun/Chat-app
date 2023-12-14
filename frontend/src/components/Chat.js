@@ -1,7 +1,15 @@
 // Chat.js
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // import { useParams } from 'react-router-dom';
+// In your main or entry file (e.g., index.js or App.js)
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import './Chat.css';
+
+
+library.add(faPaperPlane);
+
 
 function Chat() {
   const [selectedUser, setSelectedUser] = useState('');
@@ -40,15 +48,19 @@ function Chat() {
 
       ws.current.onmessage = (event) => {
         console.log('WebSocket message received:', event.data);
+        const eventData = event.data;
+        const jsonData = JSON.parse(eventData);
 
         // Gelen mesajı messageHistory'e ekle
         const newMessage = {
           id: Date.now(),
-          sender: selectedUser, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
-          message_text: event.data,
+          sender: jsonData.sender, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
+          message_text: jsonData.message,
         };
-
-        setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+        
+        if (selectedUser === newMessage.sender){
+          setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+        }
       };
 
       ws.current.onerror = (error) => {
@@ -109,6 +121,47 @@ function Chat() {
       setMessageHistory(data.history || []);
     } catch (error) {
       console.error('Error fetching message history:', error);
+    }
+  };
+  
+  const [enterMessage, setEnterMessage] = useState('');
+
+  const handleEnterKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey){
+      event.preventDefault();
+       // Check if there's a selected user and a message to send
+      if (selectedUser && enterMessage.trim() !== '') {
+        sendMessage(selectedUser, enterMessage);
+
+        // Clear the input field after sending the message
+        setEnterMessage('');
+      }
+    }
+  }
+
+  const sendMessage = (selectedUser, enterMessage) => {
+    // Check if the WebSocket is open
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+
+      // Construct the payload to be sent as JSON
+      const payload = {
+        'receiver': selectedUser,
+        'message': enterMessage,
+      };
+      console.log(payload)
+
+      // Send the payload as a JSON string through the WebSocket
+      ws.current.send(JSON.stringify(payload));
+
+      // Gelen mesajı messageHistory'e ekle
+      const newMessage = {
+        id: Date.now(),
+        sender: currentUserName, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
+        message_text: enterMessage,
+      };
+
+      setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
+      setEnterMessage('');
     }
   };
 
@@ -182,12 +235,12 @@ function Chat() {
                   {messageHistory.map((message) => (
                     <div className="message" key={message.id}>
                       <div className="message__head">
-                        <span className="message__note">{message.sender == currentUserName ? `${message.sent_at}` : `${message.sender}`}</span>
-                        <span className="message__note">{message.sender == currentUserName ? `${message.sender}` : `${message.sent_at}`}</span>
+                        <span className="message__note">{message.sender === currentUserName ? `${message.sent_at}` : `${message.sender}`}</span>
+                        <span className="message__note">{message.sender === currentUserName ? `${message.sender}` : `${message.sent_at}`}</span>
                       </div>
                       <div className="message__base">
 
-                        {message.sender == currentUserName ? (
+                        {message.sender === currentUserName ? (
                           <>
                             <div className="message__textbox">
                               <span className="message__text">{message.message_text}</span>
@@ -226,12 +279,20 @@ function Chat() {
               <div class="chatbox__row">
                 <div class="enter">
                   <div class="enter__submit">
-                    <button class="button button_id_submit" type="submit">
-                      <i class="fa fa-paper-plane" aria-hidden="true"></i>
+                    <button class="button button_id_submit" type="button" onClick={() => sendMessage(selectedUser, enterMessage)}>
+                      <FontAwesomeIcon icon="paper-plane" /> send
                     </button>
                   </div>
                   <div class="enter__textarea">
-                    <textarea name="enterMessage" id="enterMessage" cols="30" rows="2" placeholder="Say message..."></textarea>
+                    <textarea name="enterMessage" 
+                      id="enterMessage"  
+                      cols="30"  
+                      rows="2" 
+                      placeholder="..."
+                      value={enterMessage}
+                      onChange={(e) => setEnterMessage(e.target.value)}
+                      onKeyDown={handleEnterKeyDown}>
+                    </textarea>
                   </div>
                   <div class="enter__icons">
                     <a href="#" class="enter__icon">
