@@ -246,7 +246,7 @@ function Chat() {
 
   const sendMessage = (selectedUser, enterMessage) => {
     // Check if the WebSocket is open
-    if (ws.current && ws.current.readyState === WebSocket.OPEN && selectedUser!='') {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       
       const formattedDate = currentDate.toLocaleString();
 
