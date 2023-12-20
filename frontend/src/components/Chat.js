@@ -31,9 +31,9 @@ function Chat() {
     const accessToken = sessionStorage.getItem('access_token');
     const username = sessionStorage.getItem('username');
     // const base_url = process.env.REACT_APP_BASE_URL;
-
+    const ws_url = process.env.REACT_APP_WEBSOCKET_BASE_URL;
     if (accessToken && username) {
-      const socketUrl = `ws://localhost:8000/chat/${username}`;
+      const socketUrl = `${ws_url}/chat/${username}`;
 
       ws.current = new WebSocket(socketUrl);
 
