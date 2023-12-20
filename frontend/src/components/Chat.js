@@ -30,10 +30,9 @@ function Chat() {
   const startWebSocket = useCallback(() => {
     const accessToken = sessionStorage.getItem('access_token');
     const username = sessionStorage.getItem('username');
-    // const base_url = process.env.REACT_APP_BASE_URL;
-    const ws_url = process.env.REACT_APP_WEBSOCKET_BASE_URL;
+    const base_url = process.env.REACT_APP_BASE_URL;
     if (accessToken && username) {
-      const socketUrl = `${ws_url}/chat/${username}`;
+      const socketUrl = `ws://${base_url}/chat/${username}`;
 
       ws.current = new WebSocket(socketUrl);
 
@@ -111,7 +110,7 @@ function Chat() {
   const fetchUsers = async () => {
     try {
       const base_url = process.env.REACT_APP_BASE_URL;
-      const url = `${base_url}/users`;
+      const url = `http://${base_url}/users`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -149,7 +148,7 @@ function Chat() {
   const fetchActiveUsers = async () => {
     try {
       const base_url = process.env.REACT_APP_BASE_URL;
-      const url = `${base_url}/active_user`;
+      const url = `http://${base_url}/active_user`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -186,7 +185,7 @@ function Chat() {
   const fetchMessageHistory = async (otherUser) => {
     try {
       const base_url = process.env.REACT_APP_BASE_URL;
-      const url = `${base_url}/chat/${otherUser}/history`;
+      const url = `http://${base_url}/chat/${otherUser}/history`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -223,7 +222,7 @@ function Chat() {
   const logout = async () => {
     try {
       const base_url = process.env.REACT_APP_BASE_URL;
-      const url = `${base_url}/logout`;
+      const url = `http://${base_url}/logout`;
 
       const response = await fetch(url, {
         method: 'POST',

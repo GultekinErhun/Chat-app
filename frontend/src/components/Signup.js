@@ -14,7 +14,7 @@ function Signup() {
   const handleSignup = async () => {
     try {
       const base_url = process.env.REACT_APP_BASE_URL;
-      const url = `${base_url}/signup`;
+      const url = `http://${base_url}/signup`;
 
       const response = await fetch(url, {
         method: 'POST',
