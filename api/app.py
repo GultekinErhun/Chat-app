@@ -158,10 +158,6 @@ def logout(token: str = Depends(oauth2_scheme)):
     else:
         raise HTTPException(status_code=401,detail="Not logged in")
 
-@app.get("/protected-endpoint")
-def protected_endpoint(current_user: str = Depends(get_current_user)):
-    return {"message": f"Hello, {current_user}! This is a protected endpoint."}
-
    
 @app.websocket("/chat/{user_name}")
 async def websocket_endpoint(websocket: WebSocket, user_name: str):
