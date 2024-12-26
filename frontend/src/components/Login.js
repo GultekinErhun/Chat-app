@@ -1,23 +1,23 @@
-// Login.js
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Login.css';
 
+
+
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const location = useLocation();
-  const history = useNavigate(); // useNavigate hook'unu ekleyin
+  const history = useNavigate();
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const usernameParam = searchParams.get('username');
     const accessTokenParam = searchParams.get('accessToken');
 
-    // Parametrede kullanıcı adı ve erişim tokeni varsa ayarlayın
     setUsername(usernameParam || '');
     setAccessToken(accessTokenParam || '');
   }, [location.search]);
@@ -53,12 +53,10 @@ function Login() {
 
       const data = await response.json();
 
-      // Kullanıcı adı ve erişim tokeni bilgilerini kaydet
       setUsername(data.user_name);
       setAccessToken(data.access_token);
       sessionStorage.setItem('username', data.user_name);
       sessionStorage.setItem('access_token', data.access_token);
-      // Başarılı giriş işlemi sonrasında "chat" sayfasına yönlendir
       history('/chat');
     } catch (error) {
       console.error('Login error:', error);
@@ -67,41 +65,35 @@ function Login() {
 
   return (
     <div className="login-container">
+      <div className="logo-container">
+        <img src="./logo.jpeg" alt="Logo" className="login-logo" />
+        <h1 className="app-name">Chat-Sever</h1>
+      </div>
       <h2>Login</h2>
       <ToastContainer />
       <form className="login-form">
-        <label>
-          Kullanıcı Adı:
-        </label>
+        <label>Username:</label>
         <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Kullanıcı adınızı girin"
-          />
-        <label>
-          Şifre:
-        </label>
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Enter your username"
+        />
+        <label>Password:</label>
         <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Şifrenizi girin"
-          />
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter your password"
+        />
         <button type="button" onClick={handleLogin}>
           Login
         </button>
       </form>
       <p>
-        Hesabınız yok mu?{' '}
-        <Link to="/signup">Hesap oluşturun</Link>
+      Don't have an account?<Link to="/signup">Create an account.</Link>
       </p>
-      {/* Eğer accessToken varsa, göster */}
-      {accessToken && (
-        <p>
-          Erişim Tokeni: {accessToken}
-        </p>
-      )}
+      {accessToken && <p>Erişim Tokeni: {accessToken}</p>}
     </div>
   );
 }

@@ -51,7 +51,7 @@ if __name__ == "__main__":
         script_paths = ['001_api.up.sql',
                         '002_api.up.sql'
                         ]
-        dir = os.getcwd() + '/migrationts'
+        dir = os.getcwd() + '/migrations'+'/migrations'
         
         # Execute the transaction
         for path in script_paths:
