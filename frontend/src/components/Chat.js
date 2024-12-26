@@ -426,42 +426,19 @@ function Chat() {
                   {messageHistory.map((message) => (
                     <div className="message" key={message.id}>
                       <div className="message__head">
-                        <span className="message__note">{message.sender === currentUserName ? `${message.sent_at}` : `${message.sender}`}</span>
-                        <span className="message__note">{message.sender === currentUserName ? `${message.sender}` : `${message.sent_at}`}</span>
+                        <span className="message__note">
+                          {message.sender === currentUserName ? message.sent_at : message.sender}
+                        </span>
                       </div>
-                      <div className="message__base">
-
-                        {message.sender === currentUserName ? (
-                          <>
-                            <div className="message__textbox">
-                              <span className="message__text">{message.message_text}</span>
-                            </div>
-                            <div className="message__avatar avatar">
-                              <a href="#" class="avatar__wrap">
-                                <div class="avatar__img" width="35" height="35" >
-                                  <a href="#" class="avatar__wrap" >
-                                    {currentUserName[0].toUpperCase()}
-                                  </a>
-                                </div>
-                              </a>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="message__avatar avatar">
-                              <a href="#" class="avatar__wrap">
-                                <div class="avatar__img" width="35" height="35" >
-                                  <a href="#" class="avatar__wrap" >
-                                    {selectedUser[0].toUpperCase()}
-                                  </a>
-                                </div>
-                              </a>
-                            </div>
-                            <div className="message__textbox">
-                              <span className="message__text">{message.message_text}</span>
-                            </div>
-                          </>
-                        )}
+                      <div className={`message__base ${message.sender === currentUserName ? 'sent' : 'received'}`}>
+                        <div className="message__avatar avatar">
+                          <a href="#" className="avatar__wrap">
+                            {message.sender[0].toUpperCase()}
+                          </a>
+                        </div>
+                        <div className="message__textbox">
+                          <span className="message__text">{message.message_text}</span>
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -1,38 +1,49 @@
 from kafka import KafkaConsumer
 import json
 import logging
-import db
+import db_operations
 from config import settings
 
-logger = logging.getLogger('tcpserver')
+logger = logging.getLogger('message_processor')
 
-def kafka_consumer_job():
-    consumer = KafkaConsumer(
-        'sent_messages',
+def process_message_stream():
+    message_consumer = KafkaConsumer(
+        'message_events',
         bootstrap_servers=['kafka:9092'],
         auto_offset_reset='latest',
-        group_id='streamlit-consumer-group',
-        value_deserializer=lambda m: json.loads(m.decode('utf-8'))
+        group_id='message-processing-group',
+        value_deserializer=lambda data: json.loads(data.decode('utf-8'))
     )
 
-    db_connection = db.postgres_connect(settings.POSTGRES_DB, settings.POSTGRES_USER, settings.POSTGRES_PASSWORD, settings.POSTGRES_HOST, settings.POSTGRES_PORT)
-    if db_connection == None:
-        logger.warning("can not connect to db")
+    db_conn = db_operations.create_db_connection(
+        settings.POSTGRES_DB, 
+        settings.POSTGRES_USER, 
+        settings.POSTGRES_PASSWORD, 
+        settings.POSTGRES_HOST, 
+        settings.POSTGRES_PORT
+    )
+
+    if db_conn is None:
+        logger.warning("Database connection failed")
         return None
-    for message in consumer:
-        sender = message.value['sender']
-        receiver = message.value['receiver']
-        sender_id = db.find_userid_by_username(db_connection, sender)
-        receiver_id = db.find_userid_by_username(db_connection, receiver)
-        message_text = message.value['message']
-        sent_at = message.value['sent_at']
-        db.insert_message(db_connection, sender_id, receiver_id, message_text, sent_at)
 
+    for msg_event in message_consumer:
+        from_user = msg_event.value['sender']
+        to_user = msg_event.value['receiver']
 
-        
+        sender_id = db_operations.get_user_id(db_conn, from_user)
+        receiver_id = db_operations.get_user_id(db_conn, to_user)
+
+        message = msg_event.value['message']
+        sent_at = msg_event.value['sent_at']
+
+        db_operations.store_message(
+            db_conn, 
+            sender_id, 
+            receiver_id, 
+            message, 
+            sent_at
+        )
 
 if __name__ == "__main__":
-    kafka_consumer_job()
-
-
-
+    process_message_stream()

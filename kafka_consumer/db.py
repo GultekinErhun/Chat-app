@@ -1,42 +1,58 @@
 import psycopg2
 from psycopg2 import sql
 
-def postgres_connect(database, user, password, host, port):
+def create_db_connection(db_name, db_user, db_pass, db_host, db_port):
     try:
-        connection = psycopg2.connect(
-            database=database,
-            user=user,
-            password=password,
-            host=host,
-            port=port
+        conn = psycopg2.connect(
+            database=db_name,
+            user=db_user,
+            password=db_pass,
+            host=db_host,
+            port=db_port
         )
-        print("Bağlantı başarılı.")
-        return connection
-    except Exception as e:
-        print(f"Hata: {e}")
+        print("Database connection established successfully.")
+        return conn
+    except Exception as error:
+        print(f"Connection error occurred: {error}")
         return None
 
-def find_userid_by_username(connection, username):
-    cursor = connection.cursor()
-    query = sql.SQL(f"SELECT id FROM users WHERE username = '{username}'")
-    cursor.execute(query)
-    userid = cursor.fetchone()
-    cursor.close()
-    return userid[0]
+def get_user_id(conn, user_name):
+    cur = conn.cursor()
+    select_query = sql.SQL(f"SELECT id FROM users WHERE user_name = '{user_name}'")
+    cur.execute(select_query)
+    result = cur.fetchone()
+    cur.close()
+    return result[0]
 
-def insert_message(connection, sender_id, receiver_id, message, sent_at = ""):
+def store_message(conn, sender_id, receiver_id, message, sent_at = ""):
     try:
-        cursor = connection.cursor()
+        cur = conn.cursor()
         if sent_at == "":
-            query = sql.SQL("INSERT INTO messages (sender_id, receiver_id, message) VALUES ({}, {}, {})").format( sql.Literal(sender_id), sql.Literal(receiver_id), sql.Literal(message))
+            insert_query = sql.SQL("""
+                INSERT INTO message_logs 
+                (sender_id, receiver_id, message) 
+                VALUES ({}, {}, {})
+            """).format(
+                sql.Literal(sender_id), 
+                sql.Literal(receiver_id), 
+                sql.Literal(message)
+            )
         else:
-            query = sql.SQL("INSERT INTO messages (sender_id, receiver_id, message, sent_at) VALUES ({}, {}, {}, {})").format( sql.Literal(sender_id), sql.Literal(receiver_id), sql.Literal(message), sql.Literal(sent_at))
-        
-        cursor.execute(query)
-        connection.commit()
-    except psycopg2.Error as e:
+            insert_query = sql.SQL("""
+                INSERT INTO message_logs 
+                (sender_id, receiver_id, message, sent_at) 
+                VALUES ({}, {}, {}, {})
+            """).format(
+                sql.Literal(sender_id), 
+                sql.Literal(receiver_id), 
+                sql.Literal(message), 
+                sql.Literal(sent_at)
+            )
 
-        print(f"Error during message insertion: {e}")
-        cursor.rollback()
+        cur.execute(insert_query)
+        conn.commit()
+    except psycopg2.Error as error:
+        print(f"Message storage failed: {error}")
+        cur.rollback()
     finally:
-        cursor.close()
+        cur.close()
