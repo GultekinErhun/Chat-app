@@ -126,8 +126,24 @@ button:focus {
 }
 
 .modal__sidebar {
-  flex: 0 0 268px;
-  background-color: #eff0f5;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.avatar {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.search__input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.search__input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .modal__main {
@@ -352,16 +368,16 @@ button:focus {
 
 .head__avatar.avatar {
   position: relative;
-  background-color: #4cceea;
+  background-color: #04916b;
 }
 
 .head__avatar.avatar_me {
     position: relative;
-    background-color: #175c6b;
+    background-color: #0099bb;
   }
 
 .head__title {
-  color: #5b6171;
+  color: #ced4e4;
   font-size: 18px;
   font-weight: 400;
   margin-left: 21px;
@@ -457,7 +473,7 @@ button:focus {
   align-items: center;
   font-size: 18px;
   font-weight: 700;
-  background-color: #b8bbc8;
+  background-color: #4bbe64;
 }
 
 .avatar_me {
@@ -572,4 +588,92 @@ button:focus {
 
 .enter__icon {
   margin-right: 12px;
+}
+
+.logout-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.logout-button:hover {
+  background-color: #c82333;
+}
+
+.modal__close {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logout-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.logout-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.logout-button:hover {
+  background-color: #c82333;
+}
+
+.modal__content {
+  position: relative; /* Bu önemli */
+}
+
+.modal__content {
+  background-image: url('./logo.jpeg');
+  background-size: cover;  /* Resmi alanı kaplayacak şekilde ayarlar */
+  background-position: center;  /* Resmi ortalar */
+  background-repeat: no-repeat;
+}
+
+/* Veya */
+.chatbox {
+  background-image: url('./logo.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+
+/* Avatar içindeki metin rengi için */
+.avatar__wrap {
+  border-radius: 50%;
+  text-decoration: none;
+  display: inherit;
+  color: #ffffff; /* İstediğiniz renk kodunu buraya yazabilirsiniz */
+}
+
+/* Kullanıcı listesindeki isimlerin rengi için */
+.users__note {
+  line-height: 18px;
+  color: #ffffff; /* İstediğiniz renk kodunu buraya yazabilirsiniz */
+  font-weight: 500;
+  margin-left: 16px;
+}
+
+
+.message__note {
+  opacity: 1;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600; /* Yazıyı daha kalın yapar */
 }

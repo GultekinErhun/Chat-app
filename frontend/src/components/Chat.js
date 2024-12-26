@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback, Component } from 'reac
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {  useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import './Chat.css';
 
@@ -47,24 +47,24 @@ function Chat() {
 
         console.log(jsonData);
         // Gelen mesajı mesajı değerlendir, tipine bak
-        if (jsonData.type == "message"){
+        if (jsonData.type == "message") {
           const newMessage = {
             id: Date.now(),
             sender: jsonData.content.sender, // Mesaj gelen kişiyi seçtiğimiz kişi olarak ayarla
             message_text: jsonData.content.message,
             sent_at: jsonData.content.sent_at,
           };
-          
-          if (selectedUser === newMessage.sender){
+
+          if (selectedUser === newMessage.sender) {
             setMessageHistory((prevHistory) => [...prevHistory, newMessage]);
           }
         }
         // user ile ilgili birşey olduysa değerlendir ve yap
-        if (jsonData.type == "user_event"){
-              fetchUsers();
-              fetchActiveUsers();
+        if (jsonData.type == "user_event") {
+          fetchUsers();
+          fetchActiveUsers();
         }
-       
+
       };
 
       ws.current.onerror = (error) => {
@@ -79,8 +79,8 @@ function Chat() {
 
   const sendMessage = (selectedUser, enterMessage) => {
     // Check if the WebSocket is open
-    if (ws.current && ws.current.readyState === WebSocket.OPEN && selectedUser!='' ) {
-      
+    if (ws.current && ws.current.readyState === WebSocket.OPEN && selectedUser != '') {
+
       const formattedDate = currentDate.toLocaleString();
 
       // Construct the payload to be sent as JSON
@@ -119,18 +119,18 @@ function Chat() {
         },
       });
 
-      if (response.ok){
+      if (response.ok) {
         const data = await response.json();
         setUsers(data.users);
-      }else{
+      } else {
         setTimeout(() => {
-          navigate(`/login`); 
+          navigate(`/login`);
         }, 500);
       }
-     
+
     } catch (error) {
       console.error('Error fetching users:', error);
-      toast.error( error || 'Bir hata yaşandı', {
+      toast.error(error || 'Bir hata yaşandı', {
         position: 'top-right',
         autoClose: 2000,
         hideProgressBar: false,
@@ -140,7 +140,7 @@ function Chat() {
       });
 
       setTimeout(() => {
-        navigate(`/login`); 
+        navigate(`/login`);
       }, 500);
     }
   };
@@ -157,18 +157,18 @@ function Chat() {
         },
       });
 
-      if (response.ok){
+      if (response.ok) {
         const data = await response.json();
         setActiveUsers(data.active_users);
-      }else{
+      } else {
         setTimeout(() => {
-          navigate(`/login`); 
+          navigate(`/login`);
         }, 500);
       }
-     
+
     } catch (error) {
       console.error('Error fetching users:', error);
-      toast.error( error || 'Bir hata yaşandı', {
+      toast.error(error || 'Bir hata yaşandı', {
         position: 'top-right',
         autoClose: 2000,
         hideProgressBar: false,
@@ -177,7 +177,7 @@ function Chat() {
         progress: undefined,
       });
       setTimeout(() => {
-        navigate(`/login`); 
+        navigate(`/login`);
       }, 500);
     }
   };
@@ -194,18 +194,18 @@ function Chat() {
         },
       });
 
-      if (response.ok){
+      if (response.ok) {
         const data = await response.json();
         setMessageHistory(data.history || []);
-      }else{
+      } else {
         setTimeout(() => {
-          navigate(`/login`); 
+          navigate(`/login`);
         }, 500);
       }
-   
+
     } catch (error) {
       console.error('Error fetching message history:', error);
-      toast.error( error || 'Bir hata yaşandı', {
+      toast.error(error || 'Bir hata yaşandı', {
         position: 'top-right',
         autoClose: 2000,
         hideProgressBar: false,
@@ -214,7 +214,7 @@ function Chat() {
         progress: undefined,
       });
       setTimeout(() => {
-        navigate(`/login`); 
+        navigate(`/login`);
       }, 500);
     }
   };
@@ -230,8 +230,8 @@ function Chat() {
           'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         },
       });
-      
-      sessionStorage.setItem('access_token', NaN); 
+
+      sessionStorage.setItem('access_token', NaN);
       sessionStorage.setItem('username', NaN);
 
       toast.success('Çıkış başarılı', {
@@ -244,12 +244,12 @@ function Chat() {
       });
 
       setTimeout(() => {
-        navigate(`/login`); 
+        navigate(`/login`);
       }, 0);
-     
+
     } catch (error) {
 
-      sessionStorage.setItem('access_token', NaN); 
+      sessionStorage.setItem('access_token', NaN);
       sessionStorage.setItem('username', NaN);
       toast.success('Çıkış başarılı', {
         position: 'top-right',
@@ -260,7 +260,7 @@ function Chat() {
         progress: undefined,
       });
       setTimeout(() => {
-        navigate(`/login`); 
+        navigate(`/login`);
       }, 0);
     }
   };
@@ -269,9 +269,9 @@ function Chat() {
 
 
   const handleEnterKeyDown = (event) => {
-    if (event.key === 'Enter' && !event.shiftKey){
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-       // Check if there's a selected user and a message to send
+      // Check if there's a selected user and a message to send
       if (selectedUser && enterMessage.trim() !== '') {
         sendMessage(selectedUser, enterMessage);
 
@@ -302,7 +302,7 @@ function Chat() {
       });
 
       setTimeout(() => {
-        navigate(`/login`); 
+        navigate(`/login`);
       }, 500);
     }
 
@@ -353,11 +353,12 @@ function Chat() {
           <a href="#" class="modal__icon">
             <i class="fa fa-times" aria-hidden="true"></i>
           </a>
-          <span class="modal__note" onClick={() => logout()}
-          style={{
-            color:  'black',
-          }}
-          >Çıkış Yap</span>
+          <button
+            className="logout-button"
+            onClick={() => logout()}
+          >
+            Exit
+          </button>
         </div>
 
         <div class="modal__content chat">
@@ -367,7 +368,7 @@ function Chat() {
                 <div class="search__icon">
                   <i class="fa fa-search" aria-hidden="true"></i>
                 </div>
-                <input type="search" class="search__input" placeholder="Kullanıcı Ara"></input >
+                <input type="search" class="search__input" placeholder=""></input >
                 <div class="search__icon search__icon_right">
                   <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                 </div>
@@ -377,12 +378,12 @@ function Chat() {
             <div class="chat__users chat__users_fullheight ">
               <div class="users">
                 {users.map((user) => (
-                  <li class="users__item" 
-                  key={user} 
-                  onClick={() => setSelectedUser(user)} 
-                  style={{
-                    backgroundColor: selectedUser === user ? '#a3a3a3' : '',
-                  }}
+                  <li class="users__item"
+                    key={user}
+                    onClick={() => setSelectedUser(user)}
+                    style={{
+                      backgroundColor: selectedUser === user ? '#a3a3a3' : '',
+                    }}
                   >
                     <div className={`users__avatar avatar ${activeUsers.includes(user) ? 'avatar_online' : ''}`}>
                       <a href="#" class="avatar__wrap">
@@ -474,10 +475,10 @@ function Chat() {
                     </button>
                   </div>
                   <div class="enter__textarea">
-                    <textarea name="enterMessage" 
-                      id="enterMessage"  
-                      cols="30"  
-                      rows="2" 
+                    <textarea name="enterMessage"
+                      id="enterMessage"
+                      cols="30"
+                      rows="2"
                       placeholder="..."
                       value={enterMessage}
                       onChange={(e) => setEnterMessage(e.target.value)}
