@@ -1,16 +1,17 @@
 // Signup.js
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Signup.css';
 
 function Signup() {
+  // State tanımlamaları
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  // const location = useLocation(); // useLocation hook'unu ekleyin
 
+  // Signup işlemi için handleSignup fonksiyonu
   const handleSignup = async () => {
     try {
       const base_url = process.env.REACT_APP_BASE_URL;
@@ -38,9 +39,8 @@ function Signup() {
           progress: undefined,
         });
 
-        // Başarılı kayıt olduktan sonra 2 saniye sonra login sayfasına yönlendir
         setTimeout(() => {
-          navigate(`/login?username=${username}`); // Kullanıcı adını parametre olarak ekleyin
+          navigate(`/login?username=${username}`);
         }, 2000);
       } else {
         const data = await response.json();
@@ -70,27 +70,29 @@ function Signup() {
 
   return (
     <div className="signup-container">
-      <h2>Signup</h2>
-      <ToastContainer />
+      <div className="logo-container">
+      <img src="./logo.jpeg" alt="Logo" className="login-logo" />
+        <div className="app-name">Chat-Server</div>
+      </div>
       <form className="signup-form">
         <label>
           Kullanıcı Adı:
         </label>
         <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Kullanıcı adınızı girin"
-          />
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Kullanıcı adınızı girin"
+        />
         <label>
           Şifre:
         </label>
         <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Şifrenizi girin"
-          />
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Şifrenizi girin"
+        />
         <button type="button" onClick={handleSignup}>
           Signup
         </button>
@@ -99,6 +101,7 @@ function Signup() {
         Zaten hesabınız var mı?{' '}
         <Link to="/login">Giriş yapın</Link>
       </p>
+      <ToastContainer />
     </div>
   );
 }
