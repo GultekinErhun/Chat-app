@@ -91,7 +91,7 @@ function Login() {
     <div className="login-container">
       <div className="logo-container">
         <img src="./logo.jpeg" alt="Logo" className="login-logo" />
-        <h1 className="app-name">Chat-Server</h1>
+        <h1 className="app-name">Chat-Sever</h1>
       </div>
       <h2>Login</h2>
       <ToastContainer />
